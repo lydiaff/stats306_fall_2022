@@ -89,14 +89,20 @@ Now add your homework back to the staging area and commit it with `git commit -m
 "A COMMIT MESSAGE"`. What was the commit ID of your changes?
 
 ```
-
+63369
 ```
 
 Demonstrate that you had a commit message using `git show --name-only HEAD` and
 putting the results below. `HEAD` is shorthand for "the most recent commit".
 
 ```
+commit 63369ca550e633d6a60542b96be0718dad9183e4 (HEAD -> main)
+Author: Qianxi Feng <qianxif@umich.edu>
+Date:   Mon Sep 26 00:14:14 2022 -0400
 
+    time1
+
+homework/homework1.Rmd
 ```
 
 If you forgot to include a commit message the first time, you can **amend**
@@ -109,23 +115,33 @@ if you left them out of your staging area.
 In the following box, write a sentence with a spelling or grammar mistake.
 
 ```
-
+spelling
 ```
 
 Use `git add` and `git commit` to commit this change. Include the commit ID:
 
 ```
-
+8e562
 ```
 
 Now use `git revert COMMITID`. What happens to this file?
 
-> YOUR ANSWER
+> The commit id "8e562" was deleted
 
 Correct the mistake and commit the changes. Demonstrate that the reverted change is no longer in the log using `git log -n 2` to show the last two commits.
 
 ```
+commit 238c2ad663df5412a0169fe23dd4b3bd7ee3b9ff (HEAD -> main)
+Author: Qianxi Feng <qianxif@umich.edu>
+Date:   Mon Sep 26 00:35:18 2022 -0400
 
+    time3
+
+commit 8e562f1bafa7711b1931feb6fb1b1a36ec7b72ea
+Author: Qianxi Feng <qianxif@umich.edu>
+Date:   Mon Sep 26 00:31:05 2022 -0400
+
+    time2
 ```
 
 ### Working on branches and repositories
@@ -147,14 +163,15 @@ $ git clone stats306_fall_2022 stats306_copy
 
 Use `ls stats306_copy` to see what is inside this new folder. What did you get?
 
-> YOUR ANSWER
+> LICENSE                         data                            labs                            stats306_fall_2022.Rproj
+README.md                       homework                        lectures
 
 Save this file. Use `cd stats306_fall_2022` to go back into this directory and
 commit the changes. Now use `cd ../stats306_copy` to go back to the other
 repository. Use `git log` to see recent changes. Did the new changes show up
 automatically? Use `git pull`. What do you see?
 
-> YOUR ANSWER
+> 
 
 We are now done with the copied repository. You may delete it if you wish using
 `rm -rf stats306_copy`. Go back to your main repository.
