@@ -89,20 +89,14 @@ Now add your homework back to the staging area and commit it with `git commit -m
 "A COMMIT MESSAGE"`. What was the commit ID of your changes?
 
 ```
-63369
+
 ```
 
 Demonstrate that you had a commit message using `git show --name-only HEAD` and
 putting the results below. `HEAD` is shorthand for "the most recent commit".
 
 ```
-commit 63369ca550e633d6a60542b96be0718dad9183e4 (HEAD -> main)
-Author: Qianxi Feng <qianxif@umich.edu>
-Date:   Mon Sep 26 00:14:14 2022 -0400
 
-    time1
-
-homework/homework1.Rmd
 ```
 
 If you forgot to include a commit message the first time, you can **amend**
@@ -115,7 +109,7 @@ if you left them out of your staging area.
 In the following box, write a sentence with a spelling or grammar mistake.
 
 ```
-spelling
+
 ```
 
 Use `git add` and `git commit` to commit this change. Include the commit ID:
