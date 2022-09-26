@@ -49,10 +49,10 @@ move pages. Hit 'q' to quit.
 
 For the most recent commit, fill out the following information:
 
-* Commit id:
-* Author:
-* Date:
-* Message:
+* Commit id:b0bbc84c31a2d3a912ccd14e524c1df01728e5dc
+* Author:Mark Fredrickson <mark.m.fredrickson@gmail.com>
+* Date:Wed Sep 21 15:11:50 2022 -0400
+* Message:lec6: adding an exercise and moving an exercise early in the slides
 
 Commit ids are usually very long, but you really only need the first 5 or so
 characters to identify them. Verify this using `git show --name-only FULLID` and
@@ -63,7 +63,7 @@ The `git show` commands provides the details on the commit beyond just the log
 info. Use `git show --name-only 14e2c4b` (you can also use your previous commit
 if you already started this question).  What files where changed in this commit?
 
-> YOUR ANSWER
+> Added lab*_files to .gitignore, to ignore images
 
 Run `git show FIRSTFIVE`. What do you think this is telling you? What do you
 think a line with a `+` means? What would a `-` mean?
@@ -210,13 +210,17 @@ to avoid repetition.
 
 ```{r}
 # A circle with diameter 7 has a circumfrence of
-7 * pi
-
+a <- 7
+a * pi
+  
 # A circle with diameter 7 has an area of
-(7 / 2)^2 * pi
+b <- (7 / 2)^2
+b * pi
 
 # A cylinder, with a face diameter of 7 and height of 16, has a volume of 
-(7 / 2)^2 * pi * 16
+c <- b * pi
+c * 16
+
 ```
 
 ### Mean and Variance (2 points)
@@ -231,17 +235,53 @@ $$ \hat \sigma^2 = \frac{1}{n - 1} \sum_{i=1}^n (X_i - \bar X_n)^2$$
 Using *vectorized* computations, compute the sample mean and sample variance of
 the `displ` column of the `mpg` data set. Do not use the functions `mean` or
 `var`. You may use `length` and `sum`.
+```{r}
+displ_col <- mpg$displ
+mean <- sum(displ_col) / length(displ_col)
+mean
+```
+```{r}
+variance <- sum((displ_col-mean)^2)/length(displ_col-1)
+variance
+```
+
 
 ### Starwars Characters (2 points)
 
 Investigate the data set `starwars`. Answer the following
 
 * How many characters are listed?
+```{r}
+length(starwars$name)
+```
+
 * What kind of data is the `mass` column?
+```{r}
+class(starwars$mass)
+```
+
 * What kind of data is the `species` column?
+```{r}
+class(starwars$species)
+```
+
 * Explain what the value `NA` means in the `hair_color` column.
+```{r}
+view(starwars)
+#The 'NA' means there does not have data shows
+```
+
 * How many characters are from Tatooine?
+```{r}
+length(which(starwars$homeworld == 'Tatooine'))
+```
+
 * For humans, what is the average (mean) age?
+```{r}
+df <- subset(starwars, species == 'Human', na.rm = TRUE)
+mean(df$birth_year, na.rm = TRUE)
+```
+
 
 ## Question 3 (5 points)
 
@@ -250,12 +290,24 @@ Investigate the data set `starwars`. Answer the following
 Create a scatter plot of the columns `height` and `mass` from the `starwars`
 data set. What jumps out from the plot? Do a little investigation to find out
 about that point.
+```{r}
+ggplot(data=starwars,mapping = aes(x=height,y=mass))+geom_point()
+
+# Jabba Desilijic Tiure jums out from the plot
+```
+
 
 ### Height and mass relationship (1 point)
 
 Create a data set that excludes the outlier from the previous question. Plot the
 relationship for height and mass again. Add a smoothed regression line.
 Interpret these results for the nature of relationship between height and mass.
+```{r}
+new_starwars <- filter(starwars, mass < 500)
+ggplot(data = new_starwars,mapping = aes(x=height,y=mass)) + geom_point() + geom_smooth(method = lm)
+
+# The results have the positive linear relationship with height and mass
+```
 
 ### Species (1 point)
 
@@ -269,12 +321,22 @@ starwars <- mutate(starwars, homeworld_other = ifelse(planet_counts[homeworld] =
 
 Use this data set to make a bar plot of the `homeworld_other` column. Excluding
 the "Other" category, what is the most common home world?
+```{r}
+ggplot(starwars, aes(homeworld_other)) + geom_bar()
+```
+
 
 ### More plotting (1 point)
 
 Using the `starwars` data set, create a new plot that does not duplicate any of
 the previous plots. Briefly describe the key elements of the plot and interpret
 the results.
+```{r}
+ggplot(starwars,aes(x=sex,y=height)) + geom_point() + geom_boxplot()
+
+# In the boxplot, the graph shows the relationship between the height and sex. The result told us that male's average height is higher than female.
+```
+
 
 ## Question 4 (5 points)
 
@@ -291,6 +353,11 @@ ggplot(txhousing, aes(x = month, y = median)) + geom_point() + geom_smooth()
 What might be misleading about this plot? Refer to section 3.9 of R for Data
 Science to propose a better way of displaying these data. Comment on any
 seasonal effects you see.
+```{r}
+# I think 
+ggplot(data = txhousing, aes(x = factor(month),y = median,color = month)) + geom_point() + coord_polar()
+```
+
 
 ### Prices by region (2 points)
 
@@ -306,9 +373,20 @@ ggplot(txhousing, aes(x = date, y = median, color = city)) +
 What would be a better way to display these data? Implement this plot. What area
 saw the biggest increase in median price during this period? Which areas have
 the largest variation in prices in a given year?
+```{r}
+ggplot(txhousing, aes(x = date, y = median, color = city)) + geom_point() + theme(legend.position = "none") + facet_wrap(~city)
+
+# I think group the plot is a better way to display these data. In this graph, Austin and Fort Bend increased biggest in median price during this period. In the given year of 2010,the South Padre Island have the largest variation in prices. 
+```
+
 
 ### Reducing volume of information (2 points)
 
 Create a plot that summarizes the number of listings for each city. For each
 city, show the minimum number of listings in a month, the maximum, and the
 median.
+```{r}
+ggplot(txhousing,aes(x=listings,y=city)) + stat_summary(fun.min="min",fun.max="max",fun=median)
+
+```
+
