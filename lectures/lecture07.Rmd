@@ -1,0 +1,336 @@
+---
+title: "Stats 306: Lecture 7"
+subtitle: "Writing Functions"
+author: "Mark Fredrickson"
+output: 
+  slidy_presentation:
+    incremental: true
+runtime: shiny_prerendered
+---
+
+
+```{r setup, include=FALSE}
+library(learnr)
+library(tidyverse)
+library(lubridate) # install.packages("lubridate") if you don't have this
+aatemp <- read_csv("data/ann_arbor_weather.csv.gz")
+```
+
+## Review: `groupby` and `summarize`
+
+* Use `groupby` to **partition** tables into groups
+* Use `summarize` to compute **within group statistics**(e.g., conditional means)
+* Useful functions to know about: `any`, `all`, `n`, `n_distinct`
+* Interaction of `mutate` with `summarize`
+
+## Review: creating functions
+
+* Functions are variables like any other in R
+* General syntax: `fname <- function(required, optional = 123) { # fn body }`
+* Return will end a function and supply a value
+* Last line of function is automatic return value
+
+## Temperature data for Ann Arbor, MI
+
+```{r}
+aatemp
+```
+
+## From duplicated code to clean code
+
+How many interquartile ranges above or below the median? (Similar to a Z-score)
+
+```{r}
+mutate(aatemp, TMAX_scale_IQR = (TMAX - median(TMAX)) / IQR(TMAX),
+               TMIN_scale_IQR = (TMIN - median(TMIN)) / IQR(TMIN)) |>
+  group_by(abs(TMAX_scale_IQR) > 1.5, abs(TMIN_scale_IQR) > 1.5) |>
+  summarize(n())
+```
+
+## Writing our own functions: capturing common behavior
+
+```{r}
+scale_IQR <- function(x) {
+  (x - median(x)) / IQR(x)
+}
+
+temp_summary <- function(tbl) {
+  group_by(tbl, abs(TMAX_scale_IQR) > 1.5, abs(TMIN_scale_IQR) > 1.5) |>
+  summarize(n())
+}
+
+mutate(aatemp, TMAX_scale_IQR = scale_IQR(TMAX), 
+               TMIN_scale_IQR = scale_IQR(TMIN)) |>
+  temp_summary()
+```
+
+## Even better: `mutate_at`
+
+We're still calling the function twice. `mutate_at` lets us pass in a
+**function** as an argument!
+
+If we give one function, it uses the original column names:
+
+```{r}
+mutate_at(aatemp, c("TMAX", "TMIN"), scale_IQR) |>
+  group_by(abs(TMAX) > 1.5, abs(TMIN) > 1.5) |>
+  summarize(n())
+```
+
+## More than one function, giving them names
+
+We can give a list of more than one function of the form
+```{r eval = FALSE}
+list(name1 = function1, name2 = function2)
+```
+
+```{r}
+mutate_at(aatemp, c("TMAX", "TMIN"), 
+          list(scale_IQR = scale_IQR, scale = scale)) |>
+  colnames()
+            
+```
+
+## Exercise
+
+**Skew** measures the relative amount of variation above and below the center of distribution. The sample **coefficient of skew** is given by 
+
+$$ \frac{(1/n) \sum_{i=1}^n (X_i - \bar X_n)^3}{\hat \sigma^3}$$
+where $\hat \sigma$ is the sample standard deviation.
+
+Write a function to compute the coefficient of skew and use `summarize_at` to compute it for `TMAX` and `TMIN` in the `aatemp` data set.
+
+```{r coefskew, exercise = TRUE}
+
+```
+
+## Plot of `TMAX` and `TMIN`
+
+```{r}
+tall_temp <- select(aatemp, TMAX, TMIN) |> pivot_longer(c("TMAX", "TMIN"))
+tall_temp
+ggplot(tall_temp, aes(x = value, fill = name)) + geom_density(alpha = 0.5)
+```
+
+## Return values
+
+R functions can return (at most) one object. Can we return several items? Yes: using vectors, lists, and tables.
+
+```{r}
+first_last <- function(x) { c(x[1], x[length(x)]) }
+first_last(LETTERS)
+
+mean_range <- function(x) { list(mean = mean(x), range = range(x))}
+mr <- mean_range(rnorm(100)) # 100 random values
+mr$mean
+mr$range
+
+numbered_table <- function(x) { 
+  tibble(idx = seq_along(x), main_column = x)
+}
+numbered_table(letters)
+```
+
+
+## Summarizing with functions that return more than one value
+
+```{r}
+mean_var <- function(x) {
+  tibble(average = mean(x), variance = var(x))
+}
+aat_year <- group_by(aatemp, year(DATE))
+summarize(aat_year, mean_var(TMAX))
+```
+
+Use caution when using this function more than once!
+
+```{r}
+summarize(aat_year, mean_var(TMAX), mean_var(TMIN))
+```
+
+## Predicates
+
+A **predicate** is a function that returns `TRUE` or `FALSE`.
+
+For example:
+```{r}
+no_missing <- function(x) {
+  !(any(is.na(x)))
+}
+
+no_missing(c(2,3,44))
+no_missing(c(7, NA, 122))
+```
+
+## Selecting columns with predicates
+
+We have seen several predicates used already: `is.numeric` or `is.character` in selecting columns. We can also use our own predicates.
+
+```{r}
+select(aatemp, where(no_missing)) |> colnames()
+```
+
+## Anonymous functions
+
+Sometimes we want to write short little functions that only get used once. We call these **anonymous functions** like this:
+
+```{r}
+select(aatemp, where(function(x) { !any(is.na(x)) })) |> ncol()
+```
+
+## Tidyverse anonymous function short hand
+
+Many of the tidyverse functions support using formulas to indicate an anonymous function:
+
+```{r}
+select(aatemp, where(~ !any(is.na(.x)))) |> ncol()
+```
+
+>* `~` starts a formula
+>* `.x` and `.y` are the arguments to the function
+
+We'll see more of this form when we discuss iteration.
+
+## More function short hand
+
+```{r}
+summarize_at(aatemp, c("TMAX", "TMIN"), ~ mean((.x - mean(.x))^3) / sd(.x)^3)
+```
+
+## Functions with optional arguments
+
+Recall that R functions with `argument = value` are optional. We can write functions this way too.
+
+```{r}
+
+multSomething <- function(x, to_mult = 1) {
+  x * to_mult
+}
+
+multSomething(10)
+multSomething(10, 2)
+multSomething(to_mult = 2, 10)
+
+mutate(aatemp, TMAX1 = multSomething(TMAX),
+               TMAX2 = multSomething(TMAX, 2)) |> 
+  select(TMAX, TMAX1, TMAX2)
+```
+
+## Some functions allow passing additional arguments indirectly
+
+```{r}
+mutate_at(aatemp, c("TMAX", "TMIN"), multSomething, to_mult = 0) |>
+  select(TMAX, TMIN)
+```
+
+This is done using the `...` argument to `mutate_at`.
+
+## Exercise
+
+Write a function `center` that **takes a function** as an argument computes
+$$x - f(x)$$
+Make the default argument be `mean`, but demonstrate using `median` centering as well.
+
+```{r higher-order, exercise = TRUE}
+myvec <- c(203404, 292, 1010, 3, -10930, 39)
+```
+
+## Exercise
+
+The `paste` function will take more than one item to turn into a string using its `...` argument:
+
+```{r}
+paste("Welcome", "to", "Stats206", "and", "DataSci101")
+```
+
+Write a function that takes a `...` argument and passes it along to `paste`. Set the `sep = "+"` when calling `paste`.
+
+```{r exdots, exercise = TRUE}
+
+
+## plus_paste("Welcome", "to", "Stats206", "and", "DataSci101")
+```
+
+## Conditional evaluation, short circuiting
+
+We have used `if_else` to make choices for an entire vector. We often need **conditional program flow** in functions.
+
+```{r}
+my_median <- function(x) {
+  x_sorted <- sort(x)
+  n <- length(x)
+  if (n %% 2 == 1) {
+    ## odd numer of observations
+    return(x_sorted[(n + 1)/2])
+  } else {
+    return(mean(x_sorted[c(n/2, n/2 + 1)]))
+  }
+  
+  return(Inf) # this line will never run
+}
+
+values_even <- c(19, 2, 4, 11)
+values_odd  <- c(19, 2, 4, 11, 9)
+
+my_median(values_even)
+my_median(values_odd)
+```
+
+## Careful about what you put in your `if` statements:
+
+```{r eval = FALSE}
+
+if (values_even > 3) {
+  ... code might assume all values are larger than 3 ...
+}
+```
+Would give the error message:
+```
+Error in if (values > 3) { : the condition has length > 1
+```
+
+Solution: use the `any` and `all` functions
+
+## Exercise: Safe variance
+
+Recall the usual (unbiased) estimator for variance:
+
+$$\frac{\sum_{i = 1}^n (X_i - \bar X)^2}{n - 1}$$
+
+If there is only one unit in the sample, this estimator is undefined. Instead, let's estimate the variance as 0 if we only have one observation.
+
+Write a function to estimate variance in this way. Demonstrate on a vector of size 1 and a longer vector. Use `var` in the case where $n > 1$.
+
+```{r}
+
+```
+
+## Combining more than one condition
+
+We can use `&&` for "and" and `||` for "or" (exclusive). We can use `!` to negate.
+
+Here's an example where we can only set one option for a function:
+
+```{r}
+food_order <- function(entree, side = NULL, dessert = NULL) {
+  if (!is.null(side) && !is.null(dessert)) {
+    return("You may only order one side or dessert")
+  } else if (!is.null(side)) {
+    return(paste("You ordered a main dish of", entree, "with a side of", side))
+  } else if(!is.null(dessert)) {
+    return(paste("You ordered a main dish of", entree, "with a dessert of", dessert))
+  } else {
+    # no side, no dessert
+    return("Are you sure you wouldn't like to order a side or dessert?")
+  }
+}
+
+food_order("soup")
+food_order("soup", side = "salad")
+food_order("soup", dessert = "cake")
+food_order("soup", "salad", "cake")
+```
+
+## Next time
+
+>* R for Data Science 7 - 7.8
