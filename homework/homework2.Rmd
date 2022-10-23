@@ -177,10 +177,13 @@ The `summary` method for tables will provide the following information for numer
 
 (Note: when there are missing observations, the other quantities are calculated with `na.rm = TRUE` as an argument to various calculations).
 
+
 Write a function that computes all of the above information. Use it with
 `summarize` or `summarize_all` and demonstrate on the following data. Your
 result does not have to have the same format, but it should have the same
 information.
+
+
 
 ```{r}
 d2 <- d
